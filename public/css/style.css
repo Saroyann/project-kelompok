@@ -1,0 +1,32 @@
+body {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card {
+      border-radius: 1rem;
+      box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+      max-width: 400px;
+      width: 100%;
+      padding: 2rem;
+    }
+    .form-control:focus {
+      box-shadow: 0 0 0 0.25rem rgb(102 126 234 / 0.5);
+      border-color: #667eea;
+    }
+    .btn-custom {
+      background: #667eea;
+      border: none;
+    }
+    .btn-custom:hover {
+      background: #5a6dd8;
+    }
+    h2 {
+      color: #4a4a4a;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
