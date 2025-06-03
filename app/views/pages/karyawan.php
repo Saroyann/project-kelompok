@@ -130,9 +130,40 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <th colspan="6" class="text-center">Tidak Ada Data</th>
-                            </tr>
+                            <?php
+                            include_once __DIR__ . '/../../config/config.php';
+                            $no = 1;
+                            $result = $conn->query("SELECT * FROM employees ORDER BY nama ASC");
+                            if ($result->num_rows > 0):
+                                while ($row = $result->fetch_assoc()):
+                            ?>
+                                    <tr>
+                                        <td><?= $no++; ?></td>
+                                        <td><?= htmlspecialchars($row['id_karyawan']); ?></td>
+                                        <td><?= htmlspecialchars($row['nama']); ?></td>
+                                        <td><?= htmlspecialchars($row['jabatan']); ?></td>
+                                        <td>Rp.<?= number_format($row['gaji'], 0, ',', '.'); ?></td>
+                                        <td>
+                                            <a href="#"
+                                                class="btn btn-warning btn-sm btn-edit"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editKaryawanModal"
+                                                data-id="<?= htmlspecialchars($row['id_karyawan']); ?>"
+                                                data-nama="<?= htmlspecialchars($row['nama']); ?>"
+                                                data-jabatan="<?= htmlspecialchars($row['jabatan']); ?>"
+                                                data-gaji="<?= htmlspecialchars($row['gaji']); ?>">Edit</a>
+
+                                            <a href="hapus_karyawan.php?id=<?= urlencode($row['id_karyawan']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin hapus?')">Hapus</a>
+                                        </td>
+                                    </tr>
+                                <?php
+                                endwhile;
+                            else:
+                                ?>
+                                <tr>
+                                    <td colspan="6" class="text-center">Tidak Ada Data</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
 
                     </table>
@@ -140,6 +171,53 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Modal Edit Karyawan -->
+    <div class="modal fade" id="editKaryawanModal" tabindex="-1" aria-labelledby="editKaryawanModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="edit_karyawan.php" method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editKaryawanModalLabel">Edit Karyawan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_karyawan" id="edit-id_karyawan">
+                        <div class="mb-3">
+                            <label class="form-label">Nama</label>
+                            <input type="text" name="nama" id="edit-nama" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jabatan</label>
+                            <select name="jabatan" id="edit-jabatan" class="form-select" required>
+                                <option value="Manajer">Manajer</option>
+                                <option value="Asisten Manajer">Asisten Manajer</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Office Boy/Girl">Office Boy/Girl</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.btn-edit').forEach(function(button) {
+            button.addEventListener('click', function() {
+                document.getElementById('edit-id_karyawan').value = this.dataset.id;
+                document.getElementById('edit-nama').value = this.dataset.nama;
+        document.getElementById('edit-jabatan').value = this.dataset.jabatan;
+            });
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

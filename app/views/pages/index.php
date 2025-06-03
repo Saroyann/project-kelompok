@@ -21,7 +21,7 @@
 
     <?php
     session_start();
-    include_once __DIR__ . '../../../config/config.php';
+    include_once __DIR__ . '/../../config/config.php';
 
     $error = "";
 
@@ -29,18 +29,30 @@
         $username = $_POST['username'];
         $password = $_POST['password'];
 
-        $stmt = $conn->prepare("SELECT * FROM admin WHERE username=? AND password=?");
-        $stmt->bind_param("ss", $username, $password);
+        // Query gabungan dengan UNION untuk mencari di kedua tabel sekaligus
+        $stmt = $conn->prepare("
+        SELECT username, password, 'admin' as role FROM admin WHERE username = ?
+        UNION
+        SELECT username, password, 'employee' as role FROM employees WHERE username = ?
+    ");
+        $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows === 1) {
-            $_SESSION['user'] = $username;
-            header("Location: dashboard.php");
-            exit();
-        } else {
-            $error = "Username atau password salah!";
+            $user = $result->fetch_assoc();
+
+            // Verifikasi password
+            if (password_verify($password, $user['password']) || $password === $user['password']) {
+                $_SESSION['user'] = $username;
+                $_SESSION['role'] = $user['role'];
+                header("Location: dashboard.php");
+                exit();
+            }
         }
+
+        // Jika sampai sini berarti login gagal
+        $error_message = "Username atau password salah!";
     }
     ?>
 

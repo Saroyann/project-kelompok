@@ -53,11 +53,33 @@
 <body>
 
 
-<!-- components -->
-<?php
-require_once __DIR__ . '/../components/navbar.php';
-require_once __DIR__ . '/../components/footer.php';
-?>
+    <!-- components -->
+    <?php
+    require_once __DIR__ . '/../components/navbar.php';
+    require_once __DIR__ . '/../components/footer.php';
+
+    include_once __DIR__ . '/../../config/config.php';
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id_karyawan = $_POST['id_karyawan'];
+        $nama = $_POST['nama'];
+        $jabatan = $_POST['jabatan'];
+        $username = $_POST['username'];
+        $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // hash password
+        $gaji = 0; // default
+
+        $stmt = $conn->prepare("INSERT INTO employees (id_karyawan, nama, jabatan, gaji, username, password) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssiss", $id_karyawan, $nama, $jabatan, $gaji, $username, $password);
+
+        if ($stmt->execute()) {
+            header("Location: karyawan.php?success=1");
+            exit();
+        } else {
+            header("Location: karyawan.php?error=1");
+            exit();
+        }
+    }
+    ?>
 
 
 </body>
