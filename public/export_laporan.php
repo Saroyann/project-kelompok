@@ -42,7 +42,12 @@ if ($no === 1) {
 }
 $html .= '</tbody></table>';
 
-$mpdf = new \Mpdf\Mpdf();
+if (!class_exists('\Mpdf\Mpdf')) {
+    die('mPDF tidak ditemukan. Pastikan sudah install composer dan require_once autoload.php sudah benar.');
+}
+$mpdf = new \Mpdf\Mpdf([
+    'tempDir' => __DIR__ . '/../tmp/mpdf'
+]);
 $mpdf->WriteHTML($html);
 $mpdf->Output('laporan_pekerjaan.pdf', 'D');
 exit;
