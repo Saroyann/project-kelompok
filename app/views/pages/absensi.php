@@ -192,6 +192,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
     }
 }
 
+// Proses aksi admin: terima/tolak kehadiran
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_kehadiran']) && $role === 'admin') {
+    $id_kehadiran = $_POST['id_kehadiran'];
+    $aksi = $_POST['aksi_kehadiran'] === 'terima' ? 'Diterima' : 'Ditolak';
+    $stmt = $conn->prepare("UPDATE kehadiran SET status = ? WHERE id = ?");
+    $stmt->bind_param("si", $aksi, $id_kehadiran);
+    $stmt->execute();
+    $stmt->close();
+    // Optional: tampilkan pesan sukses/gagal
+    header("Location: " . $_SERVER['REQUEST_URI']);
+    exit;
+}
+
 
 ?>
 
@@ -276,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
 <body>
     <div class="main-container">
         <div class="content-wrapper">
-             <?php if ($role !== 'admin'): ?>
+            <?php if ($role !== 'admin'): ?>
                 <div class="card mb-4 attendance-card">
                     <div class="card-header bg-primary text-white text-center">
                         <h5 class="mb-0">Form Kehadiran Karyawan</h5>
@@ -298,8 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
                         <form method="POST" enctype="multipart/form-data" id="attendanceForm">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Foto Selfie <span class="text-danger">*</span></label>
-                                <input type="file" name="foto" id="foto" class="form-control" accept="image/*" <?= $jam_datang ? 'disabled' : 'required' ?>>
-                                <small class="form-text text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
+                                <input type="file" name="foto" id="foto" class="form-control" accept="image/*" <?= !$jam_datang ? 'required' : '' ?>> <small class="form-text text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
                                 <div id="imagePreview"></div>
                             </div>
                             <div class="mb-3">
@@ -339,12 +351,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
                                             <th class="text-center">Status</th>
                                             <th class="text-center">Foto Selfie</th>
                                             <th class="text-center">Lokasi</th>
+                                            <th class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (empty($absensi)): ?>
                                             <tr>
-                                                <td colspan="6" class="text-center text-muted py-4">
+                                                <td colspan="7" class="text-center text-muted py-4">
                                                     <i class="bi bi-inbox"></i><br>
                                                     Belum ada data kehadiran hari ini
                                                 </td>
@@ -354,7 +367,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
                                             foreach ($absensi as $row): ?>
                                                 <tr>
                                                     <td class="text-center"><?= $no++ ?></td>
-
                                                     <td><span class="admin-table-nama"><?= htmlspecialchars($row['nama']) ?></span></td>
                                                     <td><span class="badge bg-info"><?= htmlspecialchars($row['id_karyawan']) ?></span></td>
                                                     <td class="text-center">
@@ -376,7 +388,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
                                                                 <i class="bi bi-geo-alt"></i> Lihat
                                                             </a>
                                                         <?php else: ?>
-                                                            <span class="text-muted">Tidak ada</span>
+                                                            <span class="text-muted"> - </span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?php if ($row['status'] === 'Hadir'): ?>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="id_kehadiran" value="<?= $row['id'] ?>">
+                                                                <button type="submit" name="aksi_kehadiran" value="terima" class="btn btn-success btn-sm" onclick="return confirm('Terima kehadiran ini?')">Terima</button>
+                                                                <button type="submit" name="aksi_kehadiran" value="tolak" class="btn btn-danger btn-sm" onclick="return confirm('Tolak kehadiran ini?')">Tolak</button>
+                                                            </form>
+                                                        <?php elseif ($row['status'] === 'Diterima'): ?>
+                                                            <span class="badge bg-success">Diterima</span>
+                                                        <?php elseif ($row['status'] === 'Ditolak'): ?>
+                                                            <span class="badge bg-danger">Ditolak</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary"><?= htmlspecialchars($row['status']) ?></span>
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
@@ -472,23 +499,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
 
         // Show image modal
         function showImageModal(imageSrc, employeeName) {
-    document.getElementById('modalImage').src = imageSrc;
-    document.getElementById('imageModalTitle').textContent = 'Foto Selfie - ' + employeeName;
-    new bootstrap.Modal(document.getElementById('imageModal')).show();
-}
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('imageModalTitle').textContent = 'Foto Selfie - ' + employeeName;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
 
         // Form validation
         document.getElementById('attendanceForm').addEventListener('submit', function(e) {
             const fileInput = document.getElementById('foto');
             const locationInput = document.getElementById('lokasi');
+            // Cek tombol mana yang diklik
+            const absenDatangBtn = document.querySelector('button[name="absen_datang"]');
+            const absenPulangBtn = document.querySelector('button[name="absen_pulang"]');
+            // Cek apakah submit karena absen datang
+            const isAbsenDatang = document.activeElement === absenDatangBtn;
 
-            if (!fileInput.files.length) {
+            // Validasi foto hanya saat absen datang
+            if (isAbsenDatang && !fileInput.files.length) {
                 e.preventDefault();
                 alert('Silakan pilih foto selfie terlebih dahulu');
                 return false;
             }
 
-            if (!locationInput.value) {
+            if (!locationInput.value && (!absenDatangBtn.disabled || isAbsenDatang)) {
                 if (!confirm('Lokasi belum terdeteksi. Lanjutkan tanpa lokasi?')) {
                     e.preventDefault();
                     return false;

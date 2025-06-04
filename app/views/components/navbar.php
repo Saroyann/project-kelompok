@@ -72,15 +72,9 @@ $role = isset($_SESSION['role']) ? $_SESSION['role'] : 'karyawan'; // default ka
             <li class="nav-item my-2">
                 <a class="nav-link fs-5 <?php echo ($current_page == 'cuti.php') ? 'active' : ''; ?>" href="cuti.php">Cuti dan Ketidakhadiran</a>
             </li>
-            <li class="nav-item my-2">
-                <a class="nav-link fs-5 <?php echo ($current_page == 'pengaturan.php') ? 'active' : ''; ?>" href="pengaturan.php">Pengaturan</a>
-            </li>
         <?php else: ?>
             <li class="nav-item my-2">
                 <a class="nav-link fs-5 <?php echo ($current_page == 'absensi.php') ? 'active' : ''; ?>" href="absensi.php">Absen</a>
-            </li>
-            <li class="nav-item my-2">
-                <a class="nav-link fs-5 <?php echo ($current_page == 'rekapan.php') ? 'active' : ''; ?>" href="rekapan.php">Rekapan Absensi</a>
             </li>
             <li class="nav-item my-2">
                 <a class="nav-link fs-5 <?php echo ($current_page == 'cuti.php') ? 'active' : ''; ?>" href="cuti.php">Pengajuan Cuti dan Ijin</a>

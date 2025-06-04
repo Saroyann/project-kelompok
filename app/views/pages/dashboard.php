@@ -87,12 +87,20 @@
                 $id_karyawan = $row['id_karyawan'];
 
                 // Cek status kehadiran hari ini
-                $stmt2 = $conn->prepare("SELECT id FROM kehadiran WHERE id_karyawan = ? AND tanggal = CURDATE()");
+                $stmt2 = $conn->prepare("SELECT status FROM kehadiran WHERE id_karyawan = ? AND tanggal = CURDATE() LIMIT 1");
                 $stmt2->bind_param("s", $id_karyawan);
                 $stmt2->execute();
                 $result2 = $stmt2->get_result();
-                if ($result2->num_rows > 0) {
-                    $status_kehadiran = "<span class='text-success fw-bold'>Telah Absen</span>";
+                if ($row2 = $result2->fetch_assoc()) {
+                    if ($row2['status'] === 'Diterima') {
+                        $status_kehadiran = "<span class='text-success fw-bold'>Telah Absen</span>";
+                    } elseif ($row2['status'] === 'Hadir') {
+                        $status_kehadiran = "<span class='text-warning fw-bold'>Menunggu Konfirmasi</span>";
+                    } elseif ($row2['status'] === 'Ditolak') {
+                        $status_kehadiran = "<span class='text-danger fw-bold'>Absensi Ditolak</span>";
+                    } else {
+                        $status_kehadiran = htmlspecialchars($row2['status']);
+                    }
                 } else {
                     $status_kehadiran = "Belum Absen";
                 }
@@ -168,6 +176,23 @@
     <?php endif; ?>
 
     <?php if ($role !== 'admin'): ?>
+        <?php
+        // Ambil jam_datang dan jam_pulang hari ini
+        $stmt3 = $conn->prepare("SELECT jam_datang, jam_pulang FROM kehadiran WHERE id_karyawan = ? AND tanggal = CURDATE() AND status = 'Diterima'");
+        $stmt3->bind_param("s", $id_karyawan);
+        $stmt3->execute();
+        $stmt3->bind_result($jam_datang, $jam_pulang);
+        if ($stmt3->fetch() && $jam_datang && $jam_pulang) {
+            $start = new DateTime($jam_datang);
+            $end = new DateTime($jam_pulang);
+            $interval = $start->diff($end);
+            $jam_kerja = $interval->h;
+        } else {
+            $jam_kerja = 0;
+        }
+        $stmt3->close();
+
+        ?>
         <div class="container mt-4">
 
             <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">

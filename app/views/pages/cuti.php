@@ -53,12 +53,51 @@
 <body>
 
 
-<!-- components -->
-<?php
-require_once __DIR__ . '/../components/navbar.php';
-require_once __DIR__ . '/../components/footer.php';
-?>
+    <!-- components -->
+    <?php
+    require_once __DIR__ . '/../components/navbar.php';
+    require_once __DIR__ . '/../components/footer.php';
+    ?>
 
+    <div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+        <div class="row justify-content-center w-100">
+            <div class="col-md-7" style="max-width: 450px;">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Form Pengajuan Cuti / Ijin</h5>
+                    </div>
+                    <div class="card-body py-4">
+                        <form method="POST" action="" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="jenis" class="form-label">Jenis Pengajuan</label>
+                                <select class="form-select" id="jenis" name="jenis" required>
+                                    <option value="">-- Pilih Jenis --</option>
+                                    <option value="Cuti">Cuti</option>
+                                    <option value="Ijin">Ijin</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tanggal_mulai" class="form-label">Tanggal Mulai</label>
+                                <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tanggal_selesai" class="form-label">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="keterangan_file" class="form-label">File Permohonan (PDF/DOCX)</label>
+                                <input type="file" class="form-control" id="keterangan_file" name="keterangan_file" accept=".pdf,.docx" required>
+                                <small class="form-text text-muted">Unggah file permohonan ijin/cuti (PDF atau DOCX, max 2MB)</small>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">Ajukan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
