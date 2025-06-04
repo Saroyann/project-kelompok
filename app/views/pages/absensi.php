@@ -50,13 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen'])) {
 
             $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             $filename = 'selfie_' . $id_karyawan . '_' . date('YmdHis') . '.' . $ext;
-            $foto_path = $upload_dir . $filename; // $upload_dir harus benar
+            $foto_path = $upload_dir . $filename;
 
             if (!file_exists($_FILES['foto']['tmp_name'])) {
                 throw new Exception("File sementara tidak ditemukan: " . $_FILES['foto']['tmp_name']);
             }
             if (move_uploaded_file($_FILES['foto']['tmp_name'], $foto_path)) {
-                $foto = 'uploads/' . $filename;
+                $foto = 'http://localhost/projek_kelompok/uploads/' . $filename;
                 error_log("File uploaded successfully: " . $foto);
             } else {
                 throw new Exception("Gagal mengupload foto. Periksa permission folder uploads");
@@ -65,13 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen'])) {
             // Debug: Tampilkan path untuk debugging
             error_log("Upload path: " . $foto_path);
             error_log("Temp file: " . $_FILES['foto']['tmp_name']);
-
-            if (move_uploaded_file($_FILES['foto']['tmp_name'], $foto_path)) {
-                $foto = 'uploads/' . $filename; // Path relatif untuk database
-                error_log("File uploaded successfully: " . $foto);
-            } else {
-                throw new Exception("Gagal mengupload foto. Periksa permission folder uploads");
-            }
         } else {
             // Handle upload errors
             $upload_errors = [
@@ -111,6 +104,95 @@ if ($role === 'admin') {
         $absensi[] = $row;
     }
 }
+
+// Ambil data karyawan
+$stmt = $conn->prepare("SELECT id_karyawan, nama FROM employees WHERE username = ?");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$result = $stmt->get_result();
+$karyawan = $result->fetch_assoc();
+$id_karyawan = $karyawan['id_karyawan'] ?? null;
+$nama = $karyawan['nama'] ?? null;
+
+// Cek status absensi hari ini
+$tanggal = date('Y-m-d');
+$jam_datang = null;
+$jam_pulang = null;
+$stmt = $conn->prepare("SELECT jam_datang, jam_pulang FROM kehadiran WHERE id_karyawan = ? AND tanggal = ?");
+$stmt->bind_param("ss", $id_karyawan, $tanggal);
+$stmt->execute();
+$stmt->bind_result($jam_datang, $jam_pulang);
+$stmt->fetch();
+$stmt->close();
+
+// Proses Absen Datang
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_datang'])) {
+    try {
+        $status = 'Hadir';
+        $lokasi = $_POST['lokasi'] ?? '-';
+        $foto = null;
+
+        // Upload foto
+        if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $file_type = $_FILES['foto']['type'];
+            if (!in_array($file_type, $allowed_types)) throw new Exception("Tipe file tidak diizinkan.");
+            if ($_FILES['foto']['size'] > 5 * 1024 * 1024) throw new Exception("Ukuran file terlalu besar.");
+            $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
+            $filename = 'selfie_' . $id_karyawan . '_' . date('YmdHis') . '.' . $ext;
+            $upload_dir = __DIR__ . '/../../../uploads/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            $foto_path = $upload_dir . $filename;
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], $foto_path)) {
+                $foto = 'http://localhost/projek_kelompok/uploads/' . $filename;
+            } else {
+                throw new Exception("Gagal mengupload foto.");
+            }
+        }
+
+        // Cek apakah sudah ada data absensi hari ini
+        $stmt = $conn->prepare("SELECT id FROM kehadiran WHERE id_karyawan = ? AND tanggal = ?");
+        $stmt->bind_param("ss", $id_karyawan, $tanggal);
+        $stmt->execute();
+        $stmt->store_result();
+
+        $jam_datang_val = '08:00';
+        if ($stmt->num_rows > 0) {
+            // Sudah ada, update jam_datang dan foto jika perlu
+            $stmt2 = $conn->prepare("UPDATE kehadiran SET jam_datang = ?, foto = ?, lokasi = ?, status = ? WHERE id_karyawan = ? AND tanggal = ?");
+            $stmt2->bind_param("ssssss", $jam_datang_val, $foto, $lokasi, $status, $id_karyawan, $tanggal);
+            $stmt2->execute();
+            $stmt2->close();
+        } else {
+            // Insert baru
+            $stmt2 = $conn->prepare("INSERT INTO kehadiran (id_karyawan, nama, status, foto, lokasi, tanggal, jam_datang) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt2->bind_param("sssssss", $id_karyawan, $nama, $status, $foto, $lokasi, $tanggal, $jam_datang_val);
+            $stmt2->execute();
+            $stmt2->close();
+        }
+        $success = "Absen Datang berhasil!";
+        $jam_datang = $jam_datang_val;
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+// Proses Absen Pulang
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
+    try {
+        $jam_pulang_val = '17:00';
+        $stmt = $conn->prepare("UPDATE kehadiran SET jam_pulang = ? WHERE id_karyawan = ? AND tanggal = ?");
+        $stmt->bind_param("sss", $jam_pulang_val, $id_karyawan, $tanggal);
+        $stmt->execute();
+        $stmt->close();
+        $success = "Absen Pulang berhasil!";
+        $jam_pulang = $jam_pulang_val;
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -144,8 +226,8 @@ if ($role === 'admin') {
 
         .attendance-card {
             width: 100%;
-            max-width: 500px;
-            /* perbesar box form */
+            max-width: 900px;
+            /* atau 1200px jika ingin sama persis dengan admin */
             margin: 0 auto;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
             border-radius: 1rem;
@@ -194,7 +276,7 @@ if ($role === 'admin') {
 <body>
     <div class="main-container">
         <div class="content-wrapper">
-            <?php if ($role !== 'admin'): ?>
+             <?php if ($role !== 'admin'): ?>
                 <div class="card mb-4 attendance-card">
                     <div class="card-header bg-primary text-white text-center">
                         <h5 class="mb-0">Form Kehadiran Karyawan</h5>
@@ -206,7 +288,6 @@ if ($role === 'admin') {
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         <?php endif; ?>
-
                         <?php if (!empty($error)): ?>
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error) ?>
@@ -217,21 +298,22 @@ if ($role === 'admin') {
                         <form method="POST" enctype="multipart/form-data" id="attendanceForm">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Foto Selfie <span class="text-danger">*</span></label>
-                                <input type="file" name="foto" id="foto" class="form-control" accept="image/*" required>
+                                <input type="file" name="foto" id="foto" class="form-control" accept="image/*" <?= $jam_datang ? 'disabled' : 'required' ?>>
                                 <small class="form-text text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
                                 <div id="imagePreview"></div>
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Lokasi</label>
-                                <input type="text" name="lokasi" id="lokasi" class="form-control" readonly placeholder="Mengambil lokasi...">
+                                <input type="text" name="lokasi" id="lokasi" class="form-control" readonly placeholder="Mengambil lokasi..." <?= $jam_datang ? 'disabled' : '' ?>>
                                 <small class="form-text text-muted">Lokasi akan diambil secara otomatis</small>
                                 <div class="debug-info" id="locationDebug"></div>
                             </div>
-
-                            <div class="d-grid">
-                                <button type="submit" name="absen" class="btn btn-success btn-lg">
-                                    <i class="bi bi-camera me-2"></i>Absen Sekarang
+                            <div class="d-grid gap-2">
+                                <button type="submit" name="absen_datang" class="btn btn-lg <?= $jam_datang ? 'btn-secondary' : 'btn-success' ?>" <?= $jam_datang ? 'disabled' : '' ?>>
+                                    Absen Datang <?= $jam_datang ? "($jam_datang)" : '' ?>
+                                </button>
+                                <button type="submit" name="absen_pulang" class="btn btn-lg <?= ($jam_datang && !$jam_pulang) ? 'btn-primary' : 'btn-secondary' ?>" <?= ($jam_datang && !$jam_pulang) ? '' : 'disabled' ?>>
+                                    Absen Pulang <?= $jam_pulang ? "($jam_pulang)" : '' ?>
                                 </button>
                             </div>
                         </form>
@@ -280,7 +362,7 @@ if ($role === 'admin') {
                                                     </td>
                                                     <td class="text-center">
                                                         <?php if ($row['foto']): ?>
-                                                            <img src="/<?= htmlspecialchars($row['foto']) ?>" alt="Selfie"
+                                                            <img src="<?= htmlspecialchars($row['foto']) ?>" alt="Selfie"
                                                                 width="60" height="60" class="rounded"
                                                                 onclick="showImageModal('<?= htmlspecialchars($row['foto']) ?>', '<?= htmlspecialchars($row['nama']) ?>')">
                                                         <?php else: ?>
@@ -390,10 +472,10 @@ if ($role === 'admin') {
 
         // Show image modal
         function showImageModal(imageSrc, employeeName) {
-            document.getElementById('modalImage').src = '/' + imageSrc;
-            document.getElementById('imageModalTitle').textContent = 'Foto Selfie - ' + employeeName;
-            new bootstrap.Modal(document.getElementById('imageModal')).show();
-        }
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('imageModalTitle').textContent = 'Foto Selfie - ' + employeeName;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
 
         // Form validation
         document.getElementById('attendanceForm').addEventListener('submit', function(e) {
