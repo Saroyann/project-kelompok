@@ -59,6 +59,67 @@
     require_once __DIR__ . '/../components/footer.php';
     ?>
 
+    <?php if ($role === 'admin'): ?>
+        <div class="container-fluid d-flex justify-content-center align-items-center" style="min-height:90vh;">
+            <div class="col-lg-10 col-md-10 mx-auto">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        Rekap Pengajuan Cuti / Ijin
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width:60px;">No</th>
+                                        <th>Nama Karyawan</th>
+                                        <th>ID Karyawan</th>
+                                        <th>Jenis</th>
+                                        <th>Lampiran</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $result = $conn->query("SELECT c.*, e.nama FROM cuti c JOIN employees e ON c.id_karyawan = e.id_karyawan ORDER BY c.id DESC");
+                                    $no = 1;
+                                    if ($result->num_rows > 0):
+                                        while ($row = $result->fetch_assoc()):
+                                    ?>
+                                            <tr>
+                                                <td class="text-center"><?= $no++ ?></td>
+                                                <td><?= htmlspecialchars($row['nama']) ?></td>
+                                                <td><?= htmlspecialchars($row['id_karyawan']) ?></td>
+                                                <td><?= htmlspecialchars($row['jenis']) ?></td>
+                                                <td>
+                                                    <?php if (!empty($row['file_lampiran'])): ?>
+                                                        <a href="<?= htmlspecialchars($row['file_lampiran']) ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                            Lihat Lampiran
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">Tidak ada</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php
+                                        endwhile;
+                                    else:
+                                        ?>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox" style="font-size:2rem;"></i><br>
+                                                <span class="fw-semibold">Tidak ada pengajuan cuti / ijin dari karyawan</span>
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
         <div class="row justify-content-center w-100">
             <div class="col-md-7" style="max-width: 450px;">
