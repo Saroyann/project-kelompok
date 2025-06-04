@@ -35,12 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen'])) {
         // Upload foto
         $foto = null;
         if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $allowed_types = ['image/jpeg', 'image/jpg'];
             $file_type = $_FILES['foto']['type'];
 
             // Validasi tipe file
             if (!in_array($file_type, $allowed_types)) {
-                throw new Exception("Tipe file tidak diizinkan. Gunakan JPG, PNG, atau GIF");
+                throw new Exception("Tipe file tidak diizinkan. Hanya JPG yang diperbolehkan.");
             }
 
             // Validasi ukuran file (maksimal 5MB)
@@ -205,6 +205,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_kehadiran']) && 
     exit;
 }
 
+// Proses Absen Pulang
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['absen_pulang'])) {
+    try {
+        $jam_pulang_val = '17:00';
+        $jam_kerja_val = 8; // Set jam kerja otomatis 8 jam saat absen pulang
+        $stmt = $conn->prepare("UPDATE kehadiran SET jam_pulang = ?, jam_kerja = ? WHERE id_karyawan = ? AND tanggal = ?");
+        $stmt->bind_param("siss", $jam_pulang_val, $jam_kerja_val, $id_karyawan, $tanggal);
+        $stmt->execute();
+        $stmt->close();
+        $success = "Absen Pulang berhasil!";
+        $jam_pulang = $jam_pulang_val;
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
 
 ?>
 
@@ -311,7 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_kehadiran']) && 
                         <form method="POST" enctype="multipart/form-data" id="attendanceForm">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Foto Selfie <span class="text-danger">*</span></label>
-                                <input type="file" name="foto" id="foto" class="form-control" accept="image/*" <?= !$jam_datang ? 'required' : '' ?>> <small class="form-text text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
+                                <input type="file" name="foto" id="foto" class="form-control" accept="jpg,image/jpeg" <?= !$jam_datang ? 'required' : '' ?>> <small class="form-text text-muted">Format: JPG. Maksimal 5MB</small>
                                 <div id="imagePreview"></div>
                             </div>
                             <div class="mb-3">

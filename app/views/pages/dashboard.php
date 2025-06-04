@@ -220,17 +220,7 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card text-center">
-                        <div class="card-header bg-success text-white">Gaji Terakhir Diterima</div>
-                        <div class="card-body">
-                            <h3>Rp.<?= number_format($gaji_terakhir, 0, ',', '.') ?></h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Laporan Pekerjaan -->
-            <div class="card">
+                    <div class="card">
                 <div class="card-header bg-secondary text-white">Laporan Pekerjaan</div>
                 <div class="card-body">
                     <form method="POST" class="d-flex mb-3">
@@ -261,6 +251,10 @@
                 </div>
             </div>
         <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Laporan Pekerjaan -->
 
 </body>
 

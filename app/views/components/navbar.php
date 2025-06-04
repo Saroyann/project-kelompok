@@ -79,9 +79,6 @@ $role = isset($_SESSION['role']) ? $_SESSION['role'] : 'karyawan'; // default ka
             <li class="nav-item my-2">
                 <a class="nav-link fs-5 <?php echo ($current_page == 'cuti.php') ? 'active' : ''; ?>" href="cuti.php">Pengajuan Cuti dan Ijin</a>
             </li>
-            <li class="nav-item my-2">
-                <a class="nav-link fs-5 <?php echo ($current_page == 'profile.php') ? 'active' : ''; ?>" href="profile.php">Profile</a>
-            </li>
         <?php endif; ?>
         <li class="nav-item my-2 logout">
             <a class="nav-link fs-5" style="color: red;" href="logout.php">Logout</a>
