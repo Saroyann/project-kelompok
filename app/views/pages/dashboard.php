@@ -86,6 +86,17 @@
                 $display_name = $row['nama'];
                 $id_karyawan = $row['id_karyawan'];
 
+                // Cek status kehadiran hari ini
+                $stmt2 = $conn->prepare("SELECT id FROM kehadiran WHERE id_karyawan = ? AND tanggal = CURDATE()");
+                $stmt2->bind_param("s", $id_karyawan);
+                $stmt2->execute();
+                $result2 = $stmt2->get_result();
+                if ($result2->num_rows > 0) {
+                    $status_kehadiran = "<span class='text-success fw-bold'>Telah Absen</span>";
+                } else {
+                    $status_kehadiran = "Belum Absen";
+                }
+
                 // Ambil ToDo List milik karyawan ini
                 $stmt4 = $conn->prepare("SELECT * FROM todolist WHERE id_karyawan = ? ORDER BY id DESC");
                 $stmt4->bind_param("s", $id_karyawan);
@@ -179,7 +190,7 @@
                     <div class="card text-center">
                         <div class="card-header bg-info text-white">Status Kehadiran</div>
                         <div class="card-body">
-                            <h3><?= htmlspecialchars($status_kehadiran) ?></h3>
+                            <h3><?= $status_kehadiran ?></h3>
                         </div>
                     </div>
                 </div>
